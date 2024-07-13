@@ -1,6 +1,6 @@
 package menus;
 
-import api.admin.HotelResource;
+import api.hotel.HotelResource;
 import models.customers.Customer;
 import models.rooms.IRoom;
 import utils.DateUtils;
@@ -12,7 +12,7 @@ import java.util.Date;
 
 import static utils.MenuRenderer.*;
 
-public class ApplicationMenu {
+public class MainMenu {
   private static final HotelResource hotelResource = new HotelResource();
 
   public static void show() {
