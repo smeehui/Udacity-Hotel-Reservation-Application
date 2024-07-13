@@ -23,7 +23,12 @@ public class AdminResource {
 
   public void addRoom(List<IRoom> room) {
     for (var r : room) {
-      reservationService.addRoom(r);
+      try {
+        reservationService.addRoom(r);
+        System.out.println("Added room " + r.getRoomNumber());
+      } catch (IllegalArgumentException e) {
+        System.out.println(e.getMessage());
+      }
     }
   }
 

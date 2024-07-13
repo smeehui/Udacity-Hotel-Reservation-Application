@@ -2,6 +2,7 @@ package models.reservations;
 
 import models.customers.Customer;
 import models.rooms.IRoom;
+import utils.DateUtils;
 
 import java.util.Date;
 
@@ -37,10 +38,10 @@ public class Reservation {
   @Override
   public String toString() {
     return String.format("""
-        Room: %s,
-        Customer: %s,
+        %s,
+        %s,
         Check in date: %s,
         Check out date: %s
-        """, room, customer, checkInDate, checkOutDate);
+        """, room, customer, DateUtils.toString(checkInDate), DateUtils.toString(checkOutDate));
   }
 }

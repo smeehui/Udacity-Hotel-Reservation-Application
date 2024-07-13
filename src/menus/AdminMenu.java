@@ -7,9 +7,11 @@ import models.rooms.IRoom;
 import models.rooms.Room;
 import models.rooms.enums.RoomType;
 import utils.InputUtils;
-import utils.MenuRenderer;
 
 import java.util.ArrayList;
+
+import static utils.MenuRenderer.renderListMenu;
+import static utils.MenuRenderer.renderTitle;
 
 public class AdminMenu {
   private static final AdminResource adminResource = new AdminResource();
@@ -18,25 +20,38 @@ public class AdminMenu {
     while (true) {
       var options = new String[]{"See all Customers", "See all Rooms", "See all Reservations", "Add a Room", "Back to " +
           "main menu"};
-      MenuRenderer.renderListMenu("Admin Menu", options);
+      renderListMenu("Admin Menu", options);
       var selected = InputUtils.inputInt(Constants.DEFAULT_MENU_SELECTION_TITLE, 1, options.length);
 
       switch (selected) {
-        case 1:
-          System.out.println("List of hotel customers: ");
-          for (var c : adminResource.getAllCustomers()) {
-            System.out.println(c);
+        case 1: {
+          renderTitle("List of customers");
+          var customers = adminResource.getAllCustomers();
+          if (customers.isEmpty()) {
+            System.out.println("No customers found");
+            break;
           }
-          break;
-        case 2:
-          System.out.println("List of rooms: ");
           var count = 0;
-          for (var r : adminResource.getAllRooms()) {
+          for (var c : customers) {
+            System.out.printf("%s. %s\n", ++count, c);
+          }
+        }
+        break;
+        case 2: {
+          renderTitle("List of rooms");
+          var rooms = adminResource.getAllRooms();
+          if (rooms.isEmpty()) {
+            System.out.println("No rooms found");
+            break;
+          }
+          var count = 0;
+          for (var r : rooms) {
             System.out.printf("%s. %s\n", ++count, r);
           }
-          break;
+        }
+        break;
         case 3:
-          System.out.println("List of reservations: ");
+          renderTitle("List of reservations");
           adminResource.displayAllReservation();
           break;
         case 4:
@@ -49,7 +64,7 @@ public class AdminMenu {
   }
 
   private static void addNewRoom() {
-    System.out.println("-----ADD NEW ROOM------:");
+    renderTitle("add new room");
     var rooms = new ArrayList<IRoom>();
     var isContinue = true;
     while (isContinue) {
@@ -70,6 +85,5 @@ public class AdminMenu {
       isContinue = continueInput;
     }
     adminResource.addRoom(rooms);
-    System.out.printf("Rooms added: %s room(s)%n", rooms.size());
   }
 }

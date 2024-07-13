@@ -13,9 +13,9 @@ public class HotelResource {
   private final CustomerService customerService;
   private final ReservationService reservationService;
 
-  public HotelResource(CustomerService customerService, ReservationService reservationService) {
-    this.customerService = customerService;
-    this.reservationService = reservationService;
+  public HotelResource() {
+    this.customerService = CustomerService.getInstance();
+    this.reservationService = ReservationService.getInstance();
   }
 
   public Customer getCustomer(String email) {
@@ -24,9 +24,10 @@ public class HotelResource {
 
   public void createCustomer(String email, String firstName, String lastName) {
     var allCustomers = customerService.getAllCustomers();
-    var created = new Customer(email, firstName, lastName);
-    if (allCustomers.contains(created)) {
-      throw new IllegalArgumentException("Customer's email already exists");
+    for (var c : allCustomers) {
+      if (c.getEmail().equals(email)) {
+        throw new IllegalArgumentException("Email already exists");
+      }
     }
     customerService.addCustomer(email, firstName, lastName);
   }
@@ -40,13 +41,17 @@ public class HotelResource {
     return null;
   }
 
+  public Collection<Reservation> getCustomerReservations(Customer customer){
+    return reservationService.getCustomerReservations(customer);
+  }
+
+  public Collection<IRoom> findAvailableRooms(Date checkInDate, Date checkOutDate) {
+    return reservationService.findRooms(checkInDate, checkOutDate);
+  }
+
   public Reservation bookARoom(String customerEmail, IRoom room, Date checkInDate, Date checkOutDate) {
     var customer = getCustomer(customerEmail);
-    if (customer == null) {
-      throw new IllegalArgumentException("Customer not found!");
-    }
-    System.out.println("Finding available rooms...");
-    Collection<IRoom> rooms = reservationService.findRooms(checkInDate, checkOutDate);
-    return  null;
+    reservationService.reserveARoom(customer, room, checkInDate, checkOutDate);
+    return new Reservation(customer, room, checkInDate, checkOutDate);
   }
 }

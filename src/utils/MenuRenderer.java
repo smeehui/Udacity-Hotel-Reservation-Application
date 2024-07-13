@@ -1,13 +1,33 @@
 package utils;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 public class MenuRenderer {
   public static void renderListMenu(String title, String... options) {
-    System.out.println(title);
+    renderTitle(title);
     System.out.println("--------------------------------");
-    var count = 1;
-    for (var opt : options) {
-      System.out.printf("%d. %s%n", count++, opt);
+    renderList(Arrays.asList(options));
+    System.out.println("--------------------------------");
+  }
+
+  public static void renderTitle(String title) {
+    System.out.printf("---------%s---------%n", title.toUpperCase());
+  }
+
+  public static void renderList(Collection<?> list) {
+    var count = 0;
+    for (var o : list) {
+      System.out.printf("%s. %s%n", ++count, o);
     }
-    System.out.println("--------------------------------");
+  }
+
+  public static void renderList(Collection<?> list, String br) {
+    var count = 0;
+    for (var o : list) {
+      System.out.printf("%s. %s%n", ++count, o);
+      System.out.println(br);
+    }
+    System.out.printf("Total: %s%n", count);
   }
 }
