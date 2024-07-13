@@ -36,6 +36,17 @@ public class Reservation {
   }
 
   @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Reservation r) {
+      return room.equals(r.getRoom())
+          && customer.equals(r.getCustomer())
+          && checkInDate.equals(r.getCheckInDate())
+          && checkOutDate.equals(r.getCheckOutDate());
+    }
+    return false;
+  }
+
+  @Override
   public String toString() {
     return String.format("""
         %s,

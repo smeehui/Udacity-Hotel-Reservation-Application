@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 public class ReservationService {
   private static ReservationService INSTANCE;
   private final Collection<IRoom> roomData = new ArrayList<>();
-  private final Collection<Reservation> reservationData = new ArrayList<>();
+  private final Collection<Reservation> reservationData = new HashSet<>();
 
   public static ReservationService getInstance() {
     if (INSTANCE == null) {
