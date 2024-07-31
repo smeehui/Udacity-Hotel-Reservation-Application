@@ -10,12 +10,10 @@ import utils.MenuRenderer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ReservationService {
   private static ReservationService INSTANCE;
-  private final Collection<IRoom> roomData = new ArrayList<>();
+  private final Collection<IRoom> roomData = new HashSet<>();
   private final Collection<Reservation> reservationData = new HashSet<>();
 
   public static ReservationService getInstance() {
@@ -45,54 +43,68 @@ public class ReservationService {
 
     try {
 //      Find fully booked single rooms and fully booked double room asynchronously
-      var getFullyBookedSingleRoomsTask = findBookedSingleRoom(checkInDate, checkOutDate);
-      var getFullyBookedDoubleRoomsTask = findBookedDoubleRooms(checkInDate, checkOutDate);
+      var getFullyBookedSingleRoomsTask = CompletableFuture.supplyAsync(() -> findBookedSingleRoom(checkInDate, checkOutDate));
+      var getFullyBookedDoubleRoomsTask = CompletableFuture.supplyAsync(() -> findBookedDoubleRooms(checkInDate, checkOutDate));
       CompletableFuture.allOf(getFullyBookedSingleRoomsTask, getFullyBookedDoubleRoomsTask).join();
 
       var fullyBookedSingleRooms = getFullyBookedSingleRoomsTask.get();
       var fullyBookedDoubleRooms = getFullyBookedDoubleRoomsTask.get();
 
 //      Concat unavailable rooms
-      var unavailableRooms = Stream.concat(fullyBookedSingleRooms.stream(), fullyBookedDoubleRooms.stream()).toList();
+      var unavailableRooms = new ArrayList<>(fullyBookedSingleRooms);
+      unavailableRooms.addAll(fullyBookedDoubleRooms);
+
+      var availableRooms = new ArrayList<IRoom>();
+
+      for (IRoom r : roomData) {
 //      Filter out unavailable rooms
-      return roomData.stream().filter(r -> !unavailableRooms.contains(r)).toList();
+        if (!unavailableRooms.contains(r)) {
+          availableRooms.add(r);
+        }
+      }
+      return availableRooms;
     } catch (InterruptedException | ExecutionException e) {
       System.out.println("An unexpected error happened, please try again later");
       return List.of();
     }
   }
 
-  private CompletableFuture<List<IRoom>> findBookedDoubleRooms(Date checkInDate, Date checkOutDate) {
-    return CompletableFuture.completedFuture(reservationData
-        .stream()
-        .filter(r -> {
-          var isDoubleRoom = RoomType.DOUBLE.toString().equals(r.getRoom().getRoomType());
-          var isCheckInDateBooked = DateUtils.isDateBetween(r.getCheckInDate(), checkInDate, checkOutDate);
-          var isCheckOutDateBooked = DateUtils.isDateBetween(r.getCheckOutDate(), checkInDate, checkOutDate);
-          return isDoubleRoom && (isCheckInDateBooked || isCheckOutDateBooked);
-        })
-//        Grouping by room to find booked times
-        .collect(Collectors.groupingBy(
-            Reservation::getRoom
-        )).entrySet()
-        .stream()
-//        Only get the double rooms which had been booked two times
-        .filter(e -> e.getValue().size() == 2)
-        .map(Map.Entry::getKey)
-        .toList());
+  private Collection<IRoom> findBookedDoubleRooms(Date checkInDate, Date checkOutDate) {
+    var bookedRooms = new ArrayList<IRoom>();
+    var grouping = new HashMap<IRoom, List<Reservation>>();
+    for (var r : reservationData) {
+      var isDoubleRoom = RoomType.DOUBLE.toString().equals(r.getRoom().getRoomType());
+      var isCheckInDateBooked = DateUtils.isDateBetween(r.getCheckInDate(), checkInDate, checkOutDate);
+      var isCheckOutDateBooked = DateUtils.isDateBetween(r.getCheckOutDate(), checkInDate, checkOutDate);
+      if (isDoubleRoom && (isCheckInDateBooked || isCheckOutDateBooked)) {
+        if (grouping.containsKey(r.getRoom())) {
+          grouping.get(r.getRoom()).add(r);
+        } else {
+          grouping.put(r.getRoom(), new ArrayList<>());
+          grouping.get(r.getRoom()).add(r);
+        }
+      }
+    }
+    for (var entry : grouping.entrySet()) {
+      if (entry.getValue().size() == 2) {
+        bookedRooms.add(entry.getKey());
+      }
+    }
+    return bookedRooms;
   }
 
-  private CompletableFuture<List<IRoom>> findBookedSingleRoom(Date checkInDate, Date checkOutDate) {
-    return CompletableFuture.completedFuture(reservationData
-        .stream()
-        .filter(r -> {
-          var isSingleRoom = RoomType.SINGLE.toString().equals(r.getRoom().getRoomType());
-          var isCheckInDateBooked = DateUtils.isDateBetween(r.getCheckInDate(), checkInDate, checkOutDate);
-          var isCheckOutDateBooked = DateUtils.isDateBetween(r.getCheckOutDate(), checkInDate, checkOutDate);
-          return isSingleRoom && (isCheckInDateBooked || isCheckOutDateBooked);
-        })
-        .map(Reservation::getRoom)
-        .toList());
+  private Collection<IRoom> findBookedSingleRoom(Date checkInDate, Date checkOutDate) {
+    var bookedRooms = new ArrayList<IRoom>();
+    for (var reservation : reservationData) {
+      var isSingleRoom = RoomType.SINGLE.toString().equals(reservation.getRoom().getRoomType());
+      var isCheckInDateBooked = DateUtils.isDateBetween(reservation.getCheckInDate(), checkInDate, checkOutDate);
+      var isCheckOutDateBooked = DateUtils.isDateBetween(reservation.getCheckOutDate(), checkInDate, checkOutDate);
+
+      if (isSingleRoom && (isCheckInDateBooked || isCheckOutDateBooked)) {
+        bookedRooms.add(reservation.getRoom());
+      }
+    }
+    return bookedRooms;
   }
 
   public Collection<Reservation> getCustomerReservations(Customer customer) {
@@ -111,7 +123,7 @@ public class ReservationService {
     MenuRenderer.renderList(reservationData, "-*-*-*-");
   }
 
-//// Test method to validate finding room
+//  // Test method to validate finding room
 //  public static void main(String[] args) {
 //    var service = new ReservationService();
 //    var room1 = new Room("1", 12.0, RoomType.SINGLE);
@@ -129,7 +141,9 @@ public class ReservationService {
 //    service.reserveARoom(customer, room1, checkin, checkout);
 //    service.reserveARoom(customer, room2, DateUtils.fromString("2022-12-13"), DateUtils.fromString("2022-12-15"));
 //
-//    System.out.println(service.findRooms(checkin, DateUtils.fromString("2022-12-15"))); // should be room2 and room3
+//// should be room2 and room3
+//    System.out.println(service.findRooms(checkin, DateUtils.fromString("2022-12-15")));
+//
 ////    Reserve room2 -> room2 is booked 2 times
 //    service.reserveARoom(customer, room2, DateUtils.fromString("2022-12-13"), DateUtils.fromString("2022-12-15"));
 //

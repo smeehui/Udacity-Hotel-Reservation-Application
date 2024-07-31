@@ -2,6 +2,8 @@ package models.rooms;
 
 import models.rooms.enums.RoomType;
 
+import java.util.Objects;
+
 public class Room implements IRoom {
   protected final String roomNumber;
   protected final Double price;
@@ -36,5 +38,18 @@ public class Room implements IRoom {
   @Override
   public Boolean isFree() {
     return 0.0 == price;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Room r) {
+      return roomNumber.equals(r.getRoomNumber());
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(roomNumber);
   }
 }

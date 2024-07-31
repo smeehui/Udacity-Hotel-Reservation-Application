@@ -68,7 +68,7 @@ public class AdminMenu {
     var rooms = new ArrayList<IRoom>();
     var isContinue = true;
     while (isContinue) {
-      var roomNumber = InputUtils.inputStr("Please enter room number: ");
+      var roomNumber = InputUtils.inputInt("Please enter room number: ",null,null).toString();
       if (rooms.stream().anyMatch(r -> r.getRoomNumber().equals(roomNumber))) {
         System.out.println("Room with this number has been already added!");
       } else {

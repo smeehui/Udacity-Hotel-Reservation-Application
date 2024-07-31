@@ -2,6 +2,7 @@ package models.customers;
 
 import constants.Constants;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class Customer {
@@ -33,6 +34,11 @@ public class Customer {
       return email.equals(c.getEmail());
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(email);
   }
 
   @Override
