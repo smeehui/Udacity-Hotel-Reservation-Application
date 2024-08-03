@@ -3,18 +3,21 @@ package services;
 import models.customers.Customer;
 import models.reservations.Reservation;
 import models.rooms.IRoom;
-import models.rooms.enums.RoomType;
 import utils.DateUtils;
 import utils.MenuRenderer;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
 
 public class ReservationService {
   private static ReservationService INSTANCE;
   private final Collection<IRoom> roomData = new HashSet<>();
   private final Collection<Reservation> reservationData = new HashSet<>();
+
+  private ReservationService() {
+  }
 
   public static ReservationService getInstance() {
     if (INSTANCE == null) {
@@ -40,67 +43,91 @@ public class ReservationService {
     if (reservationData.isEmpty()) {
       return roomData;
     }
-
-    try {
+//    [Old code]
+//    try {
 //      Find fully booked single rooms and fully booked double room asynchronously
-      var getFullyBookedSingleRoomsTask = CompletableFuture.supplyAsync(() -> findBookedSingleRoom(checkInDate, checkOutDate));
-      var getFullyBookedDoubleRoomsTask = CompletableFuture.supplyAsync(() -> findBookedDoubleRooms(checkInDate, checkOutDate));
-      CompletableFuture.allOf(getFullyBookedSingleRoomsTask, getFullyBookedDoubleRoomsTask).join();
+//      var getFullyBookedSingleRoomsTask = CompletableFuture.supplyAsync(() -> findBookedSingleRoom(checkInDate, checkOutDate));
+//      var getFullyBookedDoubleRoomsTask = CompletableFuture.supplyAsync(() -> findBookedDoubleRooms(checkInDate, checkOutDate));
+//      CompletableFuture.allOf(getFullyBookedSingleRoomsTask, getFullyBookedDoubleRoomsTask).join();
+//
+//      var fullyBookedSingleRooms = getFullyBookedSingleRoomsTask.get();
+//      var fullyBookedDoubleRooms = getFullyBookedDoubleRoomsTask.get();
 
-      var fullyBookedSingleRooms = getFullyBookedSingleRoomsTask.get();
-      var fullyBookedDoubleRooms = getFullyBookedDoubleRoomsTask.get();
 
-//      Concat unavailable rooms
-      var unavailableRooms = new ArrayList<>(fullyBookedSingleRooms);
-      unavailableRooms.addAll(fullyBookedDoubleRooms);
+////      Concat unavailable rooms
+//      var unavailableRooms = new ArrayList<>(fullyBookedSingleRooms);
+//      unavailableRooms.addAll(fullyBookedDoubleRooms);
 
-      var availableRooms = new ArrayList<IRoom>();
+//      var availableRooms = new ArrayList<IRoom>();
+//
+//      for (IRoom r : roomData) {
+////      Filter out unavailable rooms
+//        if (!unavailableRooms.contains(r)) {
+//          availableRooms.add(r);
+//        }
+//      }
+//      return availableRooms;
+//    } catch (InterruptedException | ExecutionException e) {
+//      System.out.println("An unexpected error happened, please try again later");
+//      return List.of();
+//    }
+    var unavailableRooms = findBookedRoom(checkInDate, checkOutDate);
+    var availableRooms = new ArrayList<IRoom>();
 
-      for (IRoom r : roomData) {
+    for (IRoom r : roomData) {
 //      Filter out unavailable rooms
-        if (!unavailableRooms.contains(r)) {
-          availableRooms.add(r);
-        }
+      if (!unavailableRooms.contains(r)) {
+        availableRooms.add(r);
       }
-      return availableRooms;
-    } catch (InterruptedException | ExecutionException e) {
-      System.out.println("An unexpected error happened, please try again later");
-      return List.of();
     }
+    return availableRooms;
   }
 
-  private Collection<IRoom> findBookedDoubleRooms(Date checkInDate, Date checkOutDate) {
-    var bookedRooms = new ArrayList<IRoom>();
-    var grouping = new HashMap<IRoom, List<Reservation>>();
-    for (var r : reservationData) {
-      var isDoubleRoom = RoomType.DOUBLE.toString().equals(r.getRoom().getRoomType());
-      var isCheckInDateBooked = DateUtils.isDateBetween(r.getCheckInDate(), checkInDate, checkOutDate);
-      var isCheckOutDateBooked = DateUtils.isDateBetween(r.getCheckOutDate(), checkInDate, checkOutDate);
-      if (isDoubleRoom && (isCheckInDateBooked || isCheckOutDateBooked)) {
-        if (grouping.containsKey(r.getRoom())) {
-          grouping.get(r.getRoom()).add(r);
-        } else {
-          grouping.put(r.getRoom(), new ArrayList<>());
-          grouping.get(r.getRoom()).add(r);
-        }
-      }
-    }
-    for (var entry : grouping.entrySet()) {
-      if (entry.getValue().size() == 2) {
-        bookedRooms.add(entry.getKey());
-      }
-    }
-    return bookedRooms;
-  }
+//  private Collection<IRoom> findBookedDoubleRooms(Date checkInDate, Date checkOutDate) {
+//    var bookedRooms = new ArrayList<IRoom>();
+//    var grouping = new HashMap<IRoom, List<Reservation>>();
+//    for (var r : reservationData) {
+//      var isDoubleRoom = RoomType.DOUBLE.toString().equals(r.getRoom().getRoomType());
+//      var isCheckInDateBooked = DateUtils.isDateBetween(r.getCheckInDate(), checkInDate, checkOutDate);
+//      var isCheckOutDateBooked = DateUtils.isDateBetween(r.getCheckOutDate(), checkInDate, checkOutDate);
+//      if (isDoubleRoom && (isCheckInDateBooked || isCheckOutDateBooked)) {
+//        if (grouping.containsKey(r.getRoom())) {
+//          grouping.get(r.getRoom()).add(r);
+//        } else {
+//          grouping.put(r.getRoom(), new ArrayList<>());
+//          grouping.get(r.getRoom()).add(r);
+//        }
+//      }
+//    }
+//    for (var entry : grouping.entrySet()) {
+//      if (entry.getValue().size() == 2) {
+//        bookedRooms.add(entry.getKey());
+//      }
+//    }
+//    return bookedRooms;
+//  }
 
-  private Collection<IRoom> findBookedSingleRoom(Date checkInDate, Date checkOutDate) {
+//  private Collection<IRoom> findBookedSingleRoom(Date checkInDate, Date checkOutDate) {
+//    var bookedRooms = new ArrayList<IRoom>();
+//    for (var reservation : reservationData) {
+//      var isSingleRoom = RoomType.SINGLE.toString().equals(reservation.getRoom().getRoomType());
+//      var isCheckInDateBooked = DateUtils.isDateBetween(reservation.getCheckInDate(), checkInDate, checkOutDate);
+//      var isCheckOutDateBooked = DateUtils.isDateBetween(reservation.getCheckOutDate(), checkInDate, checkOutDate);
+//
+//      if (isSingleRoom && (isCheckInDateBooked || isCheckOutDateBooked)) {
+//        bookedRooms.add(reservation.getRoom());
+//      }
+//    }
+//    return bookedRooms;
+//  }
+
+  private Collection<IRoom> findBookedRoom(Date checkInDate, Date checkOutDate) {
     var bookedRooms = new ArrayList<IRoom>();
     for (var reservation : reservationData) {
-      var isSingleRoom = RoomType.SINGLE.toString().equals(reservation.getRoom().getRoomType());
       var isCheckInDateBooked = DateUtils.isDateBetween(reservation.getCheckInDate(), checkInDate, checkOutDate);
       var isCheckOutDateBooked = DateUtils.isDateBetween(reservation.getCheckOutDate(), checkInDate, checkOutDate);
 
-      if (isSingleRoom && (isCheckInDateBooked || isCheckOutDateBooked)) {
+      if ((isCheckInDateBooked || isCheckOutDateBooked)) {
         bookedRooms.add(reservation.getRoom());
       }
     }

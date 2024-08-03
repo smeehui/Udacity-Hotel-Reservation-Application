@@ -2,8 +2,8 @@ package utils;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 public class DateUtils {
@@ -18,11 +18,11 @@ public class DateUtils {
   }
 
   public static String toString(Date date) {
-    return date.toInstant().plus(1, ChronoUnit.DAYS).toString().substring(0, 10);
+    return date.toInstant().toString().substring(0, 10);
   }
 
   public static Date fromLocalDate(LocalDate date) {
-    return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    return Date.from(date.atTime(1,0).toInstant(ZoneOffset.UTC));
   }
 
   public static Date fromString(String input) {
